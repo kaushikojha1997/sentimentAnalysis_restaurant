@@ -9,7 +9,7 @@ import re
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template,g
 import pickle
 import flask_cors
 from flask_cors import CORS
@@ -25,10 +25,14 @@ cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 model = pickle.load(open('model.pkl', 'rb'))
 cv = CountVectorizer(decode_error="replace",vocabulary=pickle.load(open("feature.pkl", "rb")))
 
-csvPos = open("positiveReviews.csv", 'a')
-csvWriterPos = csv.writer(csvPos)
-csvNeg = open("negativeReviews.csv", 'a')
-csvWriterNeg = csv.writer(csvNeg)
+@app.before_request
+def before_request_func():
+    
+    g.csvPos = open("positiveReviews.csv", 'a')
+    g.csvWriterPos = csv.writer(g.csvPos)
+    g.csvNeg = open("negativeReviews.csv", 'a')
+    g.csvWriterNeg = csv.writer(g.csvNeg)
+    
 
 def preprocess(dataset):
     corpus=[]
@@ -67,13 +71,13 @@ def predict():
     prediction = model.predict(X)
     if prediction[0]==1:
         out="Positive"
-        csvWriterPos.writerow([time,name,dept,review])
-        csvPos.close()
+        g.csvWriterPos.writerow([time,name,dept,review])
+        #csvPos.close()
         return render_template('index.html', prediction_text='Thank You, hope you visit us again: {}'.format(out))
     else:
         out="Negative"    
-        csvWriterNeg.writerow([time,name,dept,review])
-        csvNeg.close()
+        g.csvWriterNeg.writerow([time,name,dept,review])
+        #csvNeg.close()
         return render_template('index.html', prediction_text='We will definetly look into this, and make ourself better: {}'.format(out))
     
     return render_template('index.html')
@@ -101,6 +105,12 @@ def predict_api():
         out="Negative"
     output = jsonify({'output':out})
     return (output)
+
+
+@app.teardown_request
+def teardown_request_func(error=None):
+    g.csvPos.close()
+    g.csvNeg.close()
 
 if __name__ == '__main__':
     try:
