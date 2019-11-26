@@ -11,12 +11,13 @@ from nltk.stem.porter import PorterStemmer
 
 from flask import Flask, request, jsonify, render_template
 import pickle
+import flask_cors
 from flask_cors import CORS
 from sklearn.feature_extraction.text import CountVectorizer
 import csv
 from datetime import datetime
 
-
+print(flask_cors.__version__)
 app = Flask(__name__)
 
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
